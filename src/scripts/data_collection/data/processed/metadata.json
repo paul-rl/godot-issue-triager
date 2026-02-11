@@ -1,0 +1,36 @@
+{
+  "repo": "godotengine/godot",
+  "target_issues_requested": 20000,
+  "issues_after_label_filter": 18182,
+  "split_sizes": {
+    "train": 12727,
+    "val": 1818,
+    "test": 3637
+  },
+  "top_topics": [
+    "topic:editor",
+    "topic:rendering",
+    "topic:3d",
+    "topic:gui",
+    "topic:core",
+    "topic:gdscript",
+    "topic:2d",
+    "topic:platforms",
+    "topic:animation",
+    "topic:input",
+    "topic:import",
+    "topic:physics",
+    "topic:dotnet",
+    "topic:export",
+    "topic:shaders",
+    "topic:thirdparty",
+    "topic:buildsystem"
+  ],
+  "min_support": 200,
+  "top_n": 17,
+  "train_frac": 0.7,
+  "val_frac": 0.1,
+  "test_frac": 0.20000000000000007,
+  "created_at_min": "2023-03-27T14:54:15+00:00",
+  "created_at_max": "2026-02-11T17:30:49+00:00"
+}
