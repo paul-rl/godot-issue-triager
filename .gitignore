@@ -210,3 +210,10 @@ __marimo__/
 secret.*
 
 .vscode
+
+# pip build metadata / wheel metadata artifacts
+pip-wheel-metadata/
+*.dist-info/
+*.egg-info/
+build/
+dist/
