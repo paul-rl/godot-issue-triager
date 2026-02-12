@@ -1,0 +1,6 @@
+splits: train=12727 val=1818 test=3637 total=18182
+% has topic: 98.54
+% has platform: 16.22
+% has impact: 28.56
+% has issue_type: 89.48
+% issues with topic='other': 9.57
