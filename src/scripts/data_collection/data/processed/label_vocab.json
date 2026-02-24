@@ -1,0 +1,41 @@
+{
+  "issue_type": [
+    "bug",
+    "discussion",
+    "docs",
+    "feature_request"
+  ],
+  "platform": [
+    "android",
+    "linuxbsd",
+    "macos",
+    "web",
+    "windows"
+  ],
+  "impact": [
+    "crash",
+    "performance",
+    "regression",
+    "usability"
+  ],
+  "topic": [
+    "2d",
+    "3d",
+    "animation",
+    "buildsystem",
+    "core",
+    "dotnet",
+    "editor",
+    "export",
+    "gdscript",
+    "gui",
+    "import",
+    "input",
+    "other",
+    "physics",
+    "platforms",
+    "rendering",
+    "shaders",
+    "thirdparty"
+  ]
+}
