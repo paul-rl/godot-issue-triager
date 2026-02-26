@@ -1,0 +1,204 @@
+{
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://example.com/godot-triage.schema.json",
+            "title": "Godot Issue Triage Output",
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["schema_version", "labels", "needs_human_triage"],
+            "properties": {
+              "schema_version": {
+                "type": "string",
+                "const": "1.0",
+                "description": "Schema version for backward compatibility."
+              },
+
+              "labels": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["issue_type", "components", "platform", "impact"],
+                "properties": {
+                  "issue_type": {
+                    "type": "array",
+                    "description": "Single-label category (0-1 items).",
+                    "minItems": 0,
+                    "maxItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "enum": ["bug", "feature_request", "discussion", "docs", "other"]
+                    },
+                    "default": []
+                  },
+                  "components": {
+                    "type": "array",
+                    "description": "Multi-label category.",
+                    "minItems": 0,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                                  "2d",
+                                  "3d",
+                                  "animation",
+                                  "buildsystem",
+                                  "core",
+                                  "dotnet",
+                                  "editor",
+                                  "export",
+                                  "gdscript",
+                                  "gui",
+                                  "import",
+                                  "input",
+                                  "other",
+                                  "physics",
+                                  "platforms",
+                                  "rendering",
+                                  "shaders",
+                                  "thirdparty"]
+                    },
+                    "default": []
+                  },
+                  "platform": {
+                    "type": "array",
+                    "description": "Multi-label category (often 0-2 items).",
+                    "minItems": 0,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "enum": ["windows", "linuxbsd", "macos", "android", "web", "unknown"]
+                    },
+                    "default": []
+                  },
+                  "impact": {
+                    "type": "array",
+                    "description": "Multi-label category.",
+                    "minItems": 0,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "enum": ["crash", "performance", "regression", "usability"]
+                    },
+                    "default": []
+                  }
+                }
+              },
+
+              "needs_human_triage": {
+                "type": "boolean",
+                "description": "Routing flag.",
+                "default": false
+              },
+
+              "scores": {
+                "type": "object",
+                "description": "Optional per-label confidence scores per category.",
+                "additionalProperties": false,
+                "properties": {
+                  "issue_type": {
+                    "type": "object",
+                    "description": "Scores for issue_type labels.",
+                    "propertyNames": {
+                      "enum": ["bug", "feature_request", "discussion", "docs", "other"]
+                    },
+                    "additionalProperties": {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "maximum": 1.0
+                    },
+                    "default": {}
+                  },
+                  "components": {
+                    "type": "object",
+                    "description": "Scores for component labels.",
+                    "propertyNames": {
+                        "enum": [ "2d",
+                                  "3d",
+                                  "animation",
+                                  "buildsystem",
+                                  "core",
+                                  "dotnet",
+                                  "editor",
+                                  "export",
+                                  "gdscript",
+                                  "gui",
+                                  "import",
+                                  "input",
+                                  "other",
+                                  "physics",
+                                  "platforms",
+                                  "rendering",
+                                  "shaders",
+                                  "thirdparty"]
+                    },
+                    "additionalProperties": {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "maximum": 1.0
+                    },
+                    "default": {}
+                  },
+                  "platform": {
+                    "type": "object",
+                    "description": "Scores for platform labels.",
+                    "propertyNames": {
+                      "enum": ["windows", "linuxbsd", "macos", "android", "web", "unknown"]
+                    },
+                    "additionalProperties": {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "maximum": 1.0
+                    },
+                    "default": {}
+                  },
+                  "impact": {
+                    "type": "object",
+                    "description": "Scores for impact labels.",
+                    "propertyNames": {
+                        "enum": [ "crash", "performance", "regression", "usability"]
+                     },
+                    "additionalProperties": {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "maximum": 1.0
+                    },
+                    "default": {}
+                  }
+                }
+              },
+
+              "meta": {
+                "type": "object",
+                "description": "Optional metadata for debugging.",
+                "additionalProperties": true,
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "enum": ["llm", "baseline", "unknown"],
+                    "default": "unknown"
+                  },
+                  "model": { "type": "string" },
+                  "run_id": { "type": "string" }
+                }
+              }
+            },
+
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "needs_human_triage": { "const": false }
+                  },
+                  "required": ["needs_human_triage"]
+                },
+                "then": {
+                  "properties": {
+                    "labels": {
+                      "properties": {
+                        "components": { "minItems": 1 }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }

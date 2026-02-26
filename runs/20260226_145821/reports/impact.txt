@@ -1,0 +1,11 @@
+              precision    recall  f1-score   support
+
+       crash       0.83      0.86      0.85       354
+ performance       0.68      0.55      0.61        86
+  regression       0.55      0.62      0.58       667
+   usability       0.43      0.22      0.29       268
+
+   micro avg       0.62      0.60      0.61      1375
+   macro avg       0.62      0.56      0.58      1375
+weighted avg       0.61      0.60      0.59      1375
+ samples avg       0.20      0.20      0.20      1375

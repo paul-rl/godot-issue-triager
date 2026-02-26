@@ -1,0 +1,18 @@
+{
+  "issue_type": {
+    "best_threshold": 0.4735294117647058,
+    "best_micro_f1": 0.7521118555199534
+  },
+  "components": {
+    "best_threshold": 0.526470588235294,
+    "best_micro_f1": 0.6702987037384933
+  },
+  "platform": {
+    "best_threshold": 0.6323529411764706,
+    "best_micro_f1": 0.6519944979367263
+  },
+  "impact": {
+    "best_threshold": 0.5794117647058823,
+    "best_micro_f1": 0.588703261734288
+  }
+}
