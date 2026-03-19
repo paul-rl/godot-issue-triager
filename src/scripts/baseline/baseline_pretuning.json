@@ -1,0 +1,200 @@
+{
+  "timestamp": "2026-02-25 16:11:50",
+  "tfidf_params": {
+    "analyzer": "word",
+    "binary": false,
+    "decode_error": "strict",
+    "dtype": "numpy.float64",
+    "encoding": "utf-8",
+    "input": "content",
+    "lowercase": true,
+    "max_df": 0.9,
+    "max_features": null,
+    "min_df": 2,
+    "ngram_range": [
+      1,
+      2
+    ],
+    "norm": "l2",
+    "preprocessor": null,
+    "smooth_idf": true,
+    "stop_words": null,
+    "strip_accents": null,
+    "sublinear_tf": true,
+    "token_pattern": "(?u)\\b\\w\\w+\\b",
+    "tokenizer": null,
+    "use_idf": true,
+    "vocabulary": null
+  },
+  "model": "OneVsRest(LogisticRegression)",
+  "model_params": {
+    "estimator__C": 1.0,
+    "estimator__class_weight": "balanced",
+    "estimator__dual": false,
+    "estimator__fit_intercept": true,
+    "estimator__intercept_scaling": 1,
+    "estimator__l1_ratio": 0.0,
+    "estimator__max_iter": 2000,
+    "estimator__n_jobs": 1,
+    "estimator__penalty": "deprecated",
+    "estimator__random_state": null,
+    "estimator__solver": "lbfgs",
+    "estimator__tol": 0.0001,
+    "estimator__verbose": 0,
+    "estimator__warm_start": false,
+    "estimator": {
+      "__estimator__": "LogisticRegression",
+      "params": {
+        "C": 1.0,
+        "class_weight": "balanced",
+        "dual": false,
+        "fit_intercept": true,
+        "intercept_scaling": 1,
+        "l1_ratio": 0.0,
+        "max_iter": 2000,
+        "n_jobs": 1,
+        "penalty": "deprecated",
+        "random_state": null,
+        "solver": "lbfgs",
+        "tol": 0.0001,
+        "verbose": 0,
+        "warm_start": false
+      }
+    },
+    "n_jobs": null,
+    "verbose": 0
+  },
+  "metrics": {
+    "micro_f1": 0.6697926059513075,
+    "macro_f1": 0.6344631436540187,
+    "hamming_loss": 0.05595281750397262
+  },
+  "per_label": [
+    {
+      "label": "2d",
+      "precision": 0.5568181818181818,
+      "recall": 0.5384615384615384,
+      "f1": 0.547486033519553,
+      "support": 91
+    },
+    {
+      "label": "3d",
+      "precision": 0.5915492957746479,
+      "recall": 0.8571428571428571,
+      "f1": 0.7,
+      "support": 196
+    },
+    {
+      "label": "animation",
+      "precision": 0.7922077922077922,
+      "recall": 0.8243243243243243,
+      "f1": 0.8079470198675497,
+      "support": 74
+    },
+    {
+      "label": "buildsystem",
+      "precision": 0.7380952380952381,
+      "recall": 0.775,
+      "f1": 0.7560975609756098,
+      "support": 40
+    },
+    {
+      "label": "core",
+      "precision": 0.4727272727272727,
+      "recall": 0.5098039215686274,
+      "f1": 0.49056603773584906,
+      "support": 153
+    },
+    {
+      "label": "dotnet",
+      "precision": 0.5571428571428572,
+      "recall": 0.7358490566037735,
+      "f1": 0.6341463414634146,
+      "support": 53
+    },
+    {
+      "label": "editor",
+      "precision": 0.7240853658536586,
+      "recall": 0.7575757575757576,
+      "f1": 0.7404520654715511,
+      "support": 627
+    },
+    {
+      "label": "export",
+      "precision": 0.39473684210526316,
+      "recall": 0.8108108108108109,
+      "f1": 0.5309734513274337,
+      "support": 37
+    },
+    {
+      "label": "gdscript",
+      "precision": 0.5721925133689839,
+      "recall": 0.7642857142857142,
+      "f1": 0.654434250764526,
+      "support": 140
+    },
+    {
+      "label": "gui",
+      "precision": 0.6655629139072847,
+      "recall": 0.7472118959107806,
+      "f1": 0.7040280210157618,
+      "support": 269
+    },
+    {
+      "label": "import",
+      "precision": 0.7560975609756098,
+      "recall": 0.8051948051948052,
+      "f1": 0.779874213836478,
+      "support": 77
+    },
+    {
+      "label": "input",
+      "precision": 0.5221238938053098,
+      "recall": 0.6781609195402298,
+      "f1": 0.59,
+      "support": 87
+    },
+    {
+      "label": "other",
+      "precision": 0.7786259541984732,
+      "recall": 0.7183098591549296,
+      "f1": 0.7472527472527473,
+      "support": 142
+    },
+    {
+      "label": "physics",
+      "precision": 0.7407407407407407,
+      "recall": 0.8571428571428571,
+      "f1": 0.7947019867549668,
+      "support": 70
+    },
+    {
+      "label": "platforms",
+      "precision": 0.3056768558951965,
+      "recall": 0.5932203389830508,
+      "f1": 0.4034582132564842,
+      "support": 118
+    },
+    {
+      "label": "rendering",
+      "precision": 0.6978193146417445,
+      "recall": 0.7859649122807018,
+      "f1": 0.7392739273927392,
+      "support": 285
+    },
+    {
+      "label": "shaders",
+      "precision": 0.5,
+      "recall": 0.8536585365853658,
+      "f1": 0.6306306306306306,
+      "support": 41
+    },
+    {
+      "label": "thirdparty",
+      "precision": 0.14634146341463414,
+      "recall": 0.2,
+      "f1": 0.16901408450704225,
+      "support": 30
+    }
+  ]
+}

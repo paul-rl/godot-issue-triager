@@ -1,0 +1,12 @@
+              precision    recall  f1-score   support
+
+     android       0.87      0.90      0.88       177
+    linuxbsd       0.52      0.64      0.57       171
+       macos       0.70      0.63      0.67       142
+         web       0.82      0.78      0.80        51
+     windows       0.52      0.45      0.49       119
+
+   micro avg       0.67      0.69      0.68       660
+   macro avg       0.69      0.68      0.68       660
+weighted avg       0.68      0.69      0.68       660
+ samples avg       0.12      0.12      0.12       660
