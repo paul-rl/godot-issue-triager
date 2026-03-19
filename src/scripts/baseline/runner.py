@@ -176,10 +176,6 @@ class ExperimentRunner:
             proba = out["proba"]
             Y_true = out["Y_true"]
 
-            grid = self.cfg.threshold_grid
-            if grid is None:
-                grid = np.linspace(0.05, 0.95, 19)
-
             out["hit_at_5"] = model.hit_rate_at_k(proba, Y_true, k=5)
             out["recall_at_5_micro"] = model.recall_at_k(proba, Y_true, k=5, average="micro")
 
@@ -187,6 +183,10 @@ class ExperimentRunner:
             grid = self.cfg.threshold_grid
             if grid is None:
                 grid = np.linspace(0.05, 0.95, 30)
+
+            grid = np.unique(np.append(grid, float(model.global_threshold)))
+            grid = np.sort(grid)
+
             out["coverage_curve"] = model.coverage_curve_from_proba(proba, Y_true, grid=grid)
 
             # trim large arrays before storing (save separately if you want)
@@ -399,6 +399,7 @@ if __name__ == "__main__":
         text_col="text_clean",
         out_dir="runs",
         schema_path="src/schemas/triage_schema.json",
+        threshold_grid=np.linspace(0.05, 0.95, 301)
     )
 
     runner = ExperimentRunner(cfg, tasks)
