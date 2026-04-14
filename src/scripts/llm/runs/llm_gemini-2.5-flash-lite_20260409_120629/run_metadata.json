@@ -1,0 +1,107 @@
+{
+  "model_type": "llm",
+  "model_name": "gemini-2.5-flash-lite",
+  "temperature": 0.7,
+  "n_samples": 20,
+  "aggregation_threshold": 0.5,
+  "max_body_chars": 8000,
+  "max_repair_attempts": 1,
+  "system_prompt": "You are an expert open-source issue triager for the Godot game engine.\n        Given a GitHub issue (title + body), produce a JSON triage record that\n        conforms EXACTLY to the schema below.\n\n        ## Output Schema\n\n        Return ONLY a valid JSON object \u2014 no markdown, no explanation.\n        The object MUST have this exact structure:\n\n        {\n          \"schema_version\": \"1.0\",\n          \"labels\": {\n            \"issue_type\": [],\n            \"components\": [],\n            \"platform\": [],\n            \"impact\": []\n          },\n          \"needs_human_triage\": false,\n          \"meta\": {\n            \"source\": \"llm\",\n            \"model\": \"gemini-2.5-flash-lite\"\n          }\n        }\n\n        ## Field Rules\n\n        - \"schema_version\": always exactly \"1.0\"\n        - \"labels.issue_type\": array with EXACTLY 0 or 1 item from [\"bug\", \"discussion\", \"docs\", \"feature_request\"]\n        - \"labels.components\": array with 1-3 items from [\"2d\", \"3d\", \"animation\", \"buildsystem\", \"core\", \"dotnet\", \"editor\", \"export\", \"gdscript\", \"gui\", \"import\", \"input\", \"other\", \"physics\", \"platforms\", \"rendering\", \"shaders\", \"thirdparty\"]. This is the most important field.\n        - \"labels.platform\": array with 0+ items from [\"android\", \"linuxbsd\", \"macos\", \"web\", \"windows\"]. Infer from OS mentions, stack traces. Empty [] if unclear.\n        - \"labels.impact\": array with 0+ items from [\"crash\", \"performance\", \"regression\", \"usability\"]. Only include if clear textual evidence (e.g., \"crash\", \"regression from 4.x\"). Empty [] if none.\n        - \"needs_human_triage\": true ONLY if you cannot confidently assign any component. If true, \"labels.components\" MUST be [].\n        - \"meta\": always include \"source\": \"llm\" and \"model\": \"gemini-2.5-flash-lite\"\n        - Do NOT include any fields not listed above (no \"confidence\", no \"scores\").\n        - Return ONLY the JSON object.",
+  "label_vocab": {
+    "issue_type": [
+      "bug",
+      "discussion",
+      "docs",
+      "feature_request"
+    ],
+    "components": [
+      "2d",
+      "3d",
+      "animation",
+      "buildsystem",
+      "core",
+      "dotnet",
+      "editor",
+      "export",
+      "gdscript",
+      "gui",
+      "import",
+      "input",
+      "other",
+      "physics",
+      "platforms",
+      "rendering",
+      "shaders",
+      "thirdparty"
+    ],
+    "platform": [
+      "android",
+      "linuxbsd",
+      "macos",
+      "web",
+      "windows"
+    ],
+    "impact": [
+      "crash",
+      "performance",
+      "regression",
+      "usability"
+    ]
+  },
+  "stats": {
+    "first_pass_valid": 64773,
+    "repaired": 7851,
+    "repair_failed": 96,
+    "api_errors": 0,
+    "content_blocked": 0,
+    "total": 72720
+  },
+  "timestamp": "2026-04-09T12:06:29.756304",
+  "metrics": {
+    "issue_type": {
+      "micro_f1": 0.8222,
+      "macro_f1": 0.2743,
+      "hamming": 0.085,
+      "coverage": 1.0
+    },
+    "components": {
+      "micro_f1": 0.5909,
+      "macro_f1": 0.5762,
+      "hamming": 0.0837,
+      "coverage": 0.9997
+    },
+    "platform": {
+      "micro_f1": 0.3102,
+      "macro_f1": 0.4872,
+      "hamming": 0.1578,
+      "coverage": 0.9214
+    },
+    "impact": {
+      "micro_f1": 0.4462,
+      "macro_f1": 0.5132,
+      "hamming": 0.1784,
+      "coverage": 0.7479
+    }
+  },
+  "ranking": {
+    "components": {
+      "hit_at_5": 0.9563,
+      "recall_at_5": 0.8954
+    },
+    "platform": {
+      "hit_at_5": 1.0,
+      "recall_at_5": 1.0
+    },
+    "impact": {
+      "hit_at_5": 1.0,
+      "recall_at_5": 1.0
+    }
+  },
+  "schema_validation": {
+    "first_pass_valid": 64773,
+    "llm_repaired": 7851,
+    "clamp_salvaged": 96,
+    "post_all_valid": 72720,
+    "total": 72720
+  }
+}

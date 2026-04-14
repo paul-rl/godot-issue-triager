@@ -1,0 +1,49 @@
+{
+  "metrics": {
+    "issue_type": {
+      "micro_f1": 0.8227,
+      "macro_f1": 0.2768,
+      "hamming": 0.0847,
+      "coverage": 1.0
+    },
+    "components": {
+      "micro_f1": 0.5919,
+      "macro_f1": 0.5721,
+      "hamming": 0.0834,
+      "coverage": 0.9995
+    },
+    "platform": {
+      "micro_f1": 0.3156,
+      "macro_f1": 0.4998,
+      "hamming": 0.1531,
+      "coverage": 0.9018
+    },
+    "impact": {
+      "micro_f1": 0.4413,
+      "macro_f1": 0.5001,
+      "hamming": 0.1772,
+      "coverage": 0.7575
+    }
+  },
+  "ranking": {
+    "components": {
+      "hit_at_5": 0.9644,
+      "recall_at_5": 0.8993
+    },
+    "platform": {
+      "hit_at_5": 1.0,
+      "recall_at_5": 1.0
+    },
+    "impact": {
+      "hit_at_5": 1.0,
+      "recall_at_5": 1.0
+    }
+  },
+  "schema_validation": {
+    "first_pass_valid": 65494,
+    "llm_repaired": 7164,
+    "clamp_salvaged": 62,
+    "post_all_valid": 72720,
+    "total": 72720
+  }
+}

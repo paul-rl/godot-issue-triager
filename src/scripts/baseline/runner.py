@@ -382,7 +382,7 @@ class ExperimentRunner:
 
 if __name__ == "__main__":
     # Load label vocab (adjust path)
-    with open("src/scripts/data_collection/data/processed/label_vocab.json", "r", encoding="utf-8") as f:
+    with open("data_collection/data/processed/label_vocab.json", "r", encoding="utf-8") as f:
         vocab = json.load(f)
 
     tasks = [
@@ -393,9 +393,9 @@ if __name__ == "__main__":
     ]
 
     cfg = RunnerConfig(
-        train_path="src/scripts/data_collection/data/processed/train.json",
-        val_path="src/scripts/data_collection/data/processed/val.json",
-        test_path="src/scripts/data_collection/data/processed/test.json",
+        train_path="data_collection/data/processed/train.json",
+        val_path="data_collection/data/processed/val.json",
+        test_path="data_collection/data/processed/test.json",
         text_col="text_clean",
         out_dir="runs",
         schema_path="src/schemas/triage_schema.json",
