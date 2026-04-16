@@ -470,12 +470,6 @@ class TfidfOvrMultilabelBaseline:
         rows = np.arange(Y_true.shape[0])[:, None]
         hits = (Y_true[rows, topk_idx] > 0).any(axis=1)
 
-        # OPTIONAL: if some rows have no true labels, you can exclude them:
-        # has_label = Y_true.sum(axis=1) > 0
-        # if has_label.any():
-        #     return hits[has_label].mean()
-        # return 0.0
-
         return hits.mean()
 
     @staticmethod

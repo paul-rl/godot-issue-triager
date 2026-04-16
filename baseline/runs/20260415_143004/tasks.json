@@ -1,0 +1,69 @@
+[
+  {
+    "name": "issue_type",
+    "label_col": "issue_type",
+    "classes": [
+      "bug",
+      "discussion",
+      "docs",
+      "feature_request"
+    ],
+    "threshold_policy": "global",
+    "tune_method": "global_micro",
+    "min_precision": 0.7
+  },
+  {
+    "name": "components",
+    "label_col": "topic",
+    "classes": [
+      "2d",
+      "3d",
+      "animation",
+      "buildsystem",
+      "core",
+      "dotnet",
+      "editor",
+      "export",
+      "gdscript",
+      "gui",
+      "import",
+      "input",
+      "other",
+      "physics",
+      "platforms",
+      "rendering",
+      "shaders",
+      "thirdparty"
+    ],
+    "threshold_policy": "global",
+    "tune_method": "global_micro",
+    "min_precision": 0.7
+  },
+  {
+    "name": "platform",
+    "label_col": "platform",
+    "classes": [
+      "android",
+      "linuxbsd",
+      "macos",
+      "web",
+      "windows"
+    ],
+    "threshold_policy": "global",
+    "tune_method": "global_micro",
+    "min_precision": 0.7
+  },
+  {
+    "name": "impact",
+    "label_col": "impact",
+    "classes": [
+      "crash",
+      "performance",
+      "regression",
+      "usability"
+    ],
+    "threshold_policy": "global",
+    "tune_method": "global_micro",
+    "min_precision": 0.7
+  }
+]

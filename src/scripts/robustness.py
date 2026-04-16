@@ -1,5 +1,5 @@
 """
-robustness.py — Robustness evaluation for Godot issue triage.
+robustness.py: Robustness evaluation for Godot issue triage.
 
 Baseline:
     Reconstructs the TF-IDF runner from saved artifacts (config.json +
@@ -11,24 +11,6 @@ LLM:
     perturbed version (4 × 700 = ~2,800 calls), and reports ΔμF1 + stability
     vs. the clean-run predictions for that same sample. Checkpoints each
     perturbation's raw outputs so interrupted runs can resume without re-calling.
-
-Usage (from project root, with venv active):
-    python robustness.py \
-        --baseline-run  baseline/runs/20260226_212256 \
-        --llm-run       runs/llm_gemini-2.5-flash-lite_20260413_155545 \
-        --vocab-path    src/scripts/data_collection/data/processed/label_vocab.json \
-        --out-dir       final_results/robustness \
-        --llm-sample-n  700
-
-    # To skip LLM re-inference (baseline only):
-    python robustness.py ... --skip-llm
-
-Outputs (in --out-dir):
-    robustness_metrics.csv    — per-perturbation ΔμF1, stability for both models
-    robustness_plot.png       — four-panel: ΔμF1 + stability for baseline AND LLM
-    robustness_table.csv      — report-ready combined table
-    interpretation.txt        — auto-generated notes per perturbation
-    llm_cache/                — raw LLM outputs per perturbation (resumable)
 """
 
 from __future__ import annotations
@@ -48,13 +30,15 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import f1_score, hamming_loss
 from sklearn.preprocessing import MultiLabelBinarizer
 from dotenv import load_dotenv
+load_dotenv(".env.local")
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. Perturbation functions
 # ─────────────────────────────────────────────────────────────────────────────
 
 def perturb_remove_title(row: dict) -> dict:
-    """Zero out the title — forces the model to rely on body only."""
+    """Zero out the title, forces the model to rely on body only."""
     r = row.copy()
     r["title"] = ""
     return r
@@ -86,7 +70,12 @@ def perturb_drop_first_last(row: dict, k_tokens: int = 50) -> dict:
     return r
 
 
+def perturb_none(row: dict) -> dict:
+    return row.copy()
+
+
 PERTURBATIONS: dict[str, callable] = {
+    "none": perturb_none,
     "remove_title":    perturb_remove_title,
     "truncate_body":   perturb_truncate_body,
     "strip_code":      perturb_strip_code,
@@ -94,6 +83,7 @@ PERTURBATIONS: dict[str, callable] = {
 }
 
 PERTURBATION_LABELS: dict[str, str] = {
+    "none": "None",
     "remove_title":    "Remove Title",
     "truncate_body":   "Truncate Body (300 chars)",
     "strip_code":      "Strip Code Blocks",
@@ -106,8 +96,7 @@ def rebuild_text_clean(df: pd.DataFrame,
                        body_col: str = "body") -> pd.DataFrame:
     """
     Reconstruct text_clean from (possibly perturbed) title + body.
-    Matches the simple concatenation used in your data pipeline.
-    Adjust here if your preprocessing does additional cleaning.
+    Matches the simple concatenation used in data pipeline.
     """
     df = df.copy()
     title = df[title_col].fillna("").astype(str).str.strip()
@@ -336,48 +325,50 @@ def _extract_labels_from_sample(sample: dict, field: str) -> list:
 
 
 def _aggregate_samples(samples: list[dict], field: str,
-                        classes: list[str],
-                        aggregation_threshold: float = 0.5) -> list[str]:
+                       classes: list[str],
+                       aggregation_threshold: float = 0.5) -> list[str]:
     """
-    Aggregate N raw LLM samples into a final prediction using majority vote.
-
-    Mirrors your GeminiTriageModel._aggregate_proba logic exactly:
-      - For each class, compute freq = (# samples containing that class) / N
-      - Predict the class if freq >= aggregation_threshold
-      - For issue_type: pick the single class with highest frequency
-        (ties broken by class list order)
+    Aggregate N raw LLM samples into a final prediction.
+    Uses Exact Set Consensus for multi-label fields.
     """
     n = len(samples)
     if n == 0:
         return []
 
-    freqs = {}
-    for cls in classes:
-        freqs[cls] = 0.0
-
     if field == "issue_type":
+        # Standard majority vote for single-label field
+        freqs = {}
         for s in samples:
             labels = _extract_labels_from_sample(s, field)
             val = labels[0] if labels else ""
-            if val in freqs:
-                freqs[val] += 1
-        # Pick the majority class (must exceed threshold)
-        best_cls  = max(freqs, key=lambda c: freqs[c])
-        best_freq = freqs[best_cls] / n
-        return [best_cls] if best_freq >= aggregation_threshold else []
+            freqs[val] = freqs.get(val, 0) + 1
+        if not freqs:
+            return []
+        best_cls = max(freqs, key=freqs.get)
+        return [best_cls] if freqs[best_cls] / n >= aggregation_threshold else []
     else:
+        # EXACT SET CONSENSUS for components, platform, impact
+        exact_set_counts = {}
+        # EXACT SET CONSENSUS for components, platform, impact
+        exact_set_counts = {}
         for s in samples:
-            labels = _extract_labels_from_sample(s, field)
-            for cls in labels:
-                if cls in freqs:
-                    freqs[cls] += 1
-        return [cls for cls in classes if freqs[cls] / n >= aggregation_threshold]
+            raw_labels = _extract_labels_from_sample(s, field)
+            # Filter out the hallucinations! Only keep official classes.
+            valid_labels = sorted([c for c in raw_labels if c in classes])
+            label_tuple = tuple(valid_labels)
+            exact_set_counts[label_tuple] = exact_set_counts.get(label_tuple, 0) + 1
 
+        # Return the exact set if it meets the threshold
+        for label_tuple, count in exact_set_counts.items():
+            if count / n >= aggregation_threshold:
+                return list(label_tuple)
+                
+        # If no exact combination gets a majority, abstain!
+        return []   
 
 def _build_robustness_system_prompt(vocab: dict) -> str:
     """
-    System prompt matching your GeminiTriageModel exactly —
-    nested labels format, same field rules.
+    System prompt matching GeminiTriageModel exactly
     """
     components  = vocab.get("components", [])
     issue_types = vocab.get("issue_type", [])
@@ -418,28 +409,35 @@ def run_llm_robustness(
     n_samples: int = 3,
     temperature: float = 0.2,
     aggregation_threshold: float = 0.5,
-    requests_per_minute: int = 200,
+    requests_per_minute: int = 500,
+    max_workers: int = 20,
 ) -> dict[str, dict]:
     """
     Run the LLM on 4 perturbed versions of sample_df with N samples per issue.
+    API calls are parallelised with ThreadPoolExecutor.
 
-    Aggregation matches GeminiTriageModel._aggregate_proba:
-      label is predicted iff (# samples containing it) / N >= aggregation_threshold.
+    Concurrency model:
+      - max_workers threads submit calls simultaneously
+      - A token bucket enforces requests_per_minute across all threads
+      - A threading.Lock protects the cache file and progress counter
+      - Each work unit is one (issue_idx, sample_idx) pair so the thread
+        pool is as fine-grained as possible
 
     Cache layout:
         cache_dir/<perturb_name>.jsonl
         Each line: {"_id": <issue_id>, "_samples": [{raw record}, ...]}
-        A row is considered complete only when len(_samples) == n_samples.
-        Partial rows are resumed from where they left off.
+        Complete when len(_samples) == n_samples. Resumable.
 
     Returns dict of perturb_name -> metrics dict.
     """
+    import threading
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     try:
         from google import genai
     except ImportError:
         raise ImportError("google-genai not installed. Run: pip install google-genai")
 
-    load_dotenv("../../.env.local")
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise EnvironmentError(
@@ -457,8 +455,8 @@ def run_llm_robustness(
         "impact":     "impact",
         "issue_type": "issue_type",
     }
-    gt_col        = gt_col_map.get(primary_task, primary_task)
-    gt_lists      = get_gt_lists(sample_df, gt_col)
+    gt_col           = gt_col_map.get(primary_task, primary_task)
+    gt_lists         = get_gt_lists(sample_df, gt_col)
     clean_pred_lists = get_preds_from_records(clean_preds, primary_task)
 
     # Infer ID column once
@@ -468,11 +466,24 @@ def run_llm_robustness(
 
     def get_id(i: int):
         val = sample_df.iloc[i][id_col] if id_col else i
-        # Coerce numpy scalar types (int64 etc.) to native Python so json.dumps works
-        return val.item() if hasattr(val, 'item') else val
+        return val.item() if hasattr(val, "item") else val
 
-    # Rate limit: minimum gap between API calls
-    min_gap = 60.0 / max(requests_per_minute, 1)
+    # ── Token bucket for rate limiting across threads ─────────────────
+    # Tracks the time the next call is allowed to start.
+    _bucket_lock = threading.Lock()
+    _next_allowed = [time.monotonic()]   # list so closure can mutate it
+
+    def _acquire_token():
+        """Block until a rate-limit slot is available, then claim it."""
+        gap = 60.0 / max(requests_per_minute, 1)
+        while True:
+            with _bucket_lock:
+                now = time.monotonic()
+                if now >= _next_allowed[0]:
+                    _next_allowed[0] = now + gap
+                    return
+                wait = _next_allowed[0] - now
+            time.sleep(wait)
 
     results = {}
 
@@ -481,7 +492,6 @@ def run_llm_robustness(
         cache_file = cache_dir / f"{perturb_name}.jsonl"
 
         # ── Load cache ────────────────────────────────────────────────
-        # done[issue_id] = {"_id": ..., "_samples": [s1, s2, ...]}
         done: dict = {}
         if cache_file.exists():
             with open(cache_file) as f:
@@ -496,66 +506,97 @@ def run_llm_robustness(
         # ── Apply perturbation ────────────────────────────────────────
         perturbed_rows = [perturb_fn(r) for r in sample_df.to_dict("records")]
 
-        # ── Determine work to do ──────────────────────────────────────
-        # An issue needs work if it has fewer than n_samples in the cache.
-        todo = [
-            i for i in range(len(sample_df))
-            if len(done.get(get_id(i), {}).get("_samples", [])) < n_samples
-        ]
-        total_calls = sum(
-            n_samples - len(done.get(get_id(i), {}).get("_samples", []))
-            for i in todo
-        )
-        print(f"    {len(todo)} issues need work → {total_calls} API calls.")
-
-        last_call_time = 0.0
-        calls_made = 0
-
-        with open(cache_file, "w") as cache_f:
-            # Re-write cache file from scratch so partial entries get updated
-            for i in range(len(sample_df)):
-                issue_id = get_id(i)
-                entry = done.get(issue_id, {"_id": issue_id, "_samples": []})
-                row = perturbed_rows[i]
+        # ── Build work list: one item per (issue, sample_slot) needed ─
+        # Each item: (issue_idx, issue_id, user_prompt, samples_already_done)
+        work_items = []
+        for i in range(len(sample_df)):
+            issue_id = get_id(i)
+            existing = done.get(issue_id, {}).get("_samples", [])
+            needed   = n_samples - len(existing)
+            if needed > 0:
+                row         = perturbed_rows[i]
                 user_prompt = _build_llm_prompt(row.get("title", ""), row.get("body", ""))
-
-                needed = n_samples - len(entry["_samples"])
                 for _ in range(needed):
-                    elapsed = time.time() - last_call_time
-                    if elapsed < min_gap:
-                        time.sleep(min_gap - elapsed)
+                    work_items.append((i, issue_id, user_prompt))
 
-                    sample = _call_gemini_once(
-                        client, model_name, system_prompt, user_prompt, temperature
-                    )
-                    last_call_time = time.time()
-                    calls_made += 1
+        total_calls = len(work_items)
+        print(f"    {sum(1 for i in range(len(sample_df)) if len(done.get(get_id(i), {}).get('_samples', [])) < n_samples)} issues need work → {total_calls} API calls.")
 
-                    if sample is None:
-                        # Fallback: empty abstention record
-                        sample = {
-                            "labels": {
-                                "issue_type": [], "components": [],
-                                "platform": [], "impact": [],
-                            },
-                            "needs_human_triage": True,
-                            "_api_error": True,
-                        }
-                    entry["_samples"].append(sample)
+        if total_calls == 0:
+            print("    Nothing to do (fully cached).")
+        else:
+            # ── Shared mutable state (protected by locks) ─────────────
+            results_lock  = threading.Lock()   # protects new_samples dict + cache file
+            progress_lock = threading.Lock()   # protects calls_made counter
+            calls_made    = [0]                # list so closure can mutate
+            # Accumulate new samples here before merging into done
+            new_samples: dict = {}             # issue_id -> [sample, ...]
 
-                    if calls_made % 100 == 0:
-                        print(f"    [{calls_made}/{total_calls}] API calls done")
+            def _call_one(issue_idx: int, issue_id, user_prompt: str) -> tuple:
+                """Worker: rate-limit, call API, return (issue_id, sample)."""
+                _acquire_token()
+                sample = _call_gemini_once(
+                    client, model_name, system_prompt, user_prompt, temperature
+                )
+                if sample is None:
+                    sample = {
+                        "labels": {
+                            "issue_type": [], "components": [],
+                            "platform": [], "impact": [],
+                        },
+                        "needs_human_triage": True,
+                        "_api_error": True,
+                    }
+                return issue_id, sample
 
-                done[issue_id] = entry
-                cache_f.write(json.dumps(entry) + "\n")
+            # Open cache file for appending partial results as they arrive
+            with open(cache_file, "w") as cache_f:
+                # Pre-write already-complete entries so the file is valid
+                # even if we crash mid-run
+                for i in range(len(sample_df)):
+                    issue_id = get_id(i)
+                    if issue_id in done and len(done[issue_id]["_samples"]) >= n_samples:
+                        cache_f.write(json.dumps(done[issue_id]) + "\n")
+                cache_f.flush()
 
-        print(f"    {calls_made} new API calls made. Aggregating...")
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    futures = {
+                        executor.submit(_call_one, i, iid, prompt): (i, iid)
+                        for i, iid, prompt in work_items
+                    }
+
+                    for future in as_completed(futures):
+                        issue_id, sample = future.result()
+
+                        with results_lock:
+                            if issue_id not in new_samples:
+                                new_samples[issue_id] = []
+                            new_samples[issue_id].append(sample)
+
+                            # Once an issue has all its new samples, write it
+                            existing  = done.get(issue_id, {}).get("_samples", [])
+                            needed    = n_samples - len(existing)
+                            if len(new_samples[issue_id]) >= needed:
+                                entry = {
+                                    "_id":     issue_id,
+                                    "_samples": existing + new_samples[issue_id][:needed],
+                                }
+                                done[issue_id] = entry
+                                cache_f.write(json.dumps(entry) + "\n")
+                                cache_f.flush()
+
+                        with progress_lock:
+                            calls_made[0] += 1
+                            if calls_made[0] % 100 == 0 or calls_made[0] == total_calls:
+                                print(f"    [{calls_made[0]}/{total_calls}] API calls done")
+
+            print(f"    {calls_made[0]} new API calls made. Aggregating...")
 
         # ── Aggregate N samples → final predictions ───────────────────
         pert_preds = []
         for i in range(len(sample_df)):
             issue_id = get_id(i)
-            samples  = done[issue_id]["_samples"]
+            samples  = done.get(issue_id, {}).get("_samples", [])
             pred     = _aggregate_samples(samples, primary_task, classes, aggregation_threshold)
             pert_preds.append(pred)
 
@@ -568,7 +609,7 @@ def run_llm_robustness(
 
         print(f"    LLM μF1 {clean_metrics['micro_f1']:.4f} → "
               f"{pert_metrics['micro_f1']:.4f}  (Δ{delta_micro:+.4f})  "
-              f"stability={stab:.4f}")
+              f"stability={stab:.4f}  pert_coverage={pert_metrics['coverage']:.4f}")
 
         results[perturb_name] = {
             "llm_sample_clean_micro":  round(clean_metrics["micro_f1"], 4),
@@ -621,7 +662,7 @@ def _align_llm_preds_to_sample(
 ) -> list[dict]:
     """Return the subset of all_preds that correspond to sample_df rows, in order."""
     if id_col is None or id_col not in sample_df.columns:
-        # No ID column — assume first N records align to sample
+        # No ID column, assume first N records align to sample
         return all_preds[:len(sample_df)]
 
     id_to_pred = {}
@@ -648,7 +689,8 @@ def run_robustness_eval(
     llm_n_samples: int = 3,
     llm_temperature: float = 0.2,
     llm_aggregation_threshold: float = 0.5,
-    llm_requests_per_minute: int = 200,
+    llm_requests_per_minute: int = 500,
+    llm_max_workers: int = 20,
     skip_llm: bool = False,
 ) -> pd.DataFrame:
     """
@@ -675,7 +717,11 @@ def run_robustness_eval(
     gt_col       = primary_spec.label_col
     classes      = primary_spec.classes
     text_col     = cfg.text_col
-    id_col       = cfg.id_col  # may be None
+    # Detect ID column from the test data itself rather than relying on
+    # cfg.id_col, which is None in the baseline RunnerConfig.
+    id_col = next(
+        (c for c in ["id", "number", "issue_id"] if c in test_df.columns), None
+    )
 
     print(f"\nTest set: {len(test_df)} issues")
 
@@ -732,7 +778,7 @@ def run_robustness_eval(
         all_llm_preds = _load_llm_predictions(llm_run_dir)
         print(f"Loaded {len(all_llm_preds)} clean LLM predictions.")
 
-        # Draw the sample — use the same indices regardless of ID column
+        # Draw the sample, use the same indices regardless of ID column
         rng = np.random.default_rng(llm_sample_seed)
         n_sample = min(llm_sample_n, len(test_df))
         sample_idx = rng.choice(len(test_df), size=n_sample, replace=False)
@@ -765,6 +811,7 @@ def run_robustness_eval(
             temperature=llm_temperature,
             aggregation_threshold=llm_aggregation_threshold,
             requests_per_minute=llm_requests_per_minute,
+            max_workers=llm_max_workers,
         )
 
     # ── Assemble final DataFrame ──────────────────────────────────────────
@@ -825,7 +872,7 @@ def _save_report_table(df: pd.DataFrame, out_dir: Path):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 8. Plot — four panels when LLM data is present, two panels otherwise
+# 8. Plot, four panels when LLM data is present, two panels otherwise
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _plot_robustness(df: pd.DataFrame, out_dir: Path, primary_task: str = "components"):
@@ -985,21 +1032,23 @@ def main():
     parser.add_argument("--llm-run",      required=True,
                         help="Path to LLM run dir, e.g. runs/llm_gemini-2.5-flash-lite_...")
     parser.add_argument("--vocab-path",
-                        default="data_collection/data/processed/label_vocab.json")
+                        default="src/scripts/data_collection/data/processed/label_vocab.json")
     parser.add_argument("--out-dir",      default="final_results/robustness")
     parser.add_argument("--primary-task", default="components")
     parser.add_argument("--llm-sample-n", type=int, default=700,
                         help="Number of test issues to sample for LLM robustness (~19%% of test set)")
     parser.add_argument("--llm-sample-seed", type=int, default=42,
                         help="Random seed for sample selection (fixed = reproducible)")
-    parser.add_argument("--llm-n-samples", type=int, default=3,
+    parser.add_argument("--llm-n-samples", type=int, default=10,
                         help="Samples per issue per perturbation (N=3 → ~8,400 total calls)")
-    parser.add_argument("--llm-temperature", type=float, default=0.2,
+    parser.add_argument("--llm-temperature", type=float, default=0.7,
                         help="Sampling temperature (must be >0 for N>1 to give different outputs)")
     parser.add_argument("--llm-agg-threshold", type=float, default=0.5,
                         help="Majority-vote threshold: predict label if freq/N >= this value")
-    parser.add_argument("--llm-rpm", type=int, default=200,
+    parser.add_argument("--llm-rpm", type=int, default=500,
                         help="Gemini requests per minute (Tier 1 Flash Lite supports 1000+)")
+    parser.add_argument("--llm-max-workers", type=int, default=20,
+                        help="Parallel threads for LLM API calls")
     parser.add_argument("--skip-llm", action="store_true",
                         help="Run baseline robustness only, skip LLM re-inference")
     args = parser.parse_args()
@@ -1016,6 +1065,7 @@ def main():
         llm_temperature=args.llm_temperature,
         llm_aggregation_threshold=args.llm_agg_threshold,
         llm_requests_per_minute=args.llm_rpm,
+        llm_max_workers=args.llm_max_workers,
         skip_llm=args.skip_llm,
     )
     print("\nDone.")

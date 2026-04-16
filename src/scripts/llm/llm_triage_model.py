@@ -1,14 +1,8 @@
 """
-LLM Triage Model — Gemini-based structured issue triager.
+LLM Triage Model, Gemini-based structured issue triager.
 
 Implements the TriageModel protocol with N-sample aggregation,
 schema-aware repair, confidence estimation, and abstention.
-
-Usage:
-    from llm_triage_model import LLMRunConfig, TaskConfig, GeminiTriageModel, LLMTriageRunner
-
-    runner = LLMTriageRunner(config, tasks)
-    results = runner.run()
 """
 from __future__ import annotations
 
@@ -382,49 +376,70 @@ class GeminiTriageModel:
 
     # ── Aggregation ────────────────────────────────────────────────────
 
-    def _aggregate_proba(self, samples: list[dict], task: TaskConfig) -> np.ndarray:
-        n = len(samples)
-        if n == 0:
-            return np.zeros(len(task.classes))
-        freqs = np.zeros(len(task.classes))
-        if task.name == "issue_type":
-            for sample in samples:
-                it_list = sample.get("labels", {}).get("issue_type", [])
-                val = it_list[0] if it_list else ""
-                if val in task.classes:
-                    freqs[task.classes.index(val)] += 1
-        else:
-            for sample in samples:
-                labels = sample.get("labels", {}).get(task.name, [])
-                for j, cls in enumerate(task.classes):
-                    if cls in labels:
-                        freqs[j] += 1
-        return freqs / n
-
-    def _aggregate_prediction(self, proba: np.ndarray, task: TaskConfig) -> list[str] | str:
+    def _aggregate_proba(self, samples: list[dict], task: TaskConfig) -> np.ndarray | dict:
+            n = len(samples)
+            if n == 0:
+                if task.name == "issue_type":
+                    return np.zeros(len(task.classes))
+                return {}
+    
+            if task.name == "issue_type":
+                # Standard per-label frequency for the single-label task
+                freqs = np.zeros(len(task.classes))
+                for sample in samples:
+                    it_list = sample.get("labels", {}).get("issue_type", [])
+                    val = it_list[0] if it_list else ""
+                    if val in task.classes:
+                        freqs[task.classes.index(val)] += 1
+                return freqs / n
+            else:
+                # EXACT SET frequency for multi-label tasks
+                exact_set_counts = {}
+                for sample in samples:
+                    labels = sample.get("labels", {}).get(task.name, [])
+                    # Filter to valid classes and sort so ["core", "physics"] == ["physics", "core"]
+                    valid_labels = sorted([c for c in labels if c in task.classes])
+                    label_tuple = tuple(valid_labels)
+                    exact_set_counts[label_tuple] = exact_set_counts.get(label_tuple, 0) + 1
+                
+                # Return normalized frequencies e.g. {('core', 'physics'): 0.6, ('gui',): 0.4}
+                return {k: v / n for k, v in exact_set_counts.items()}
+    
+    
+    def _aggregate_prediction(self, proba: np.ndarray | dict, task: TaskConfig) -> list[str] | str:
         threshold = self.config.aggregation_threshold
+            
         if task.name == "issue_type":
+            # Pick highest probability class for single-label
             return task.classes[int(np.argmax(proba))]
         else:
-            return [task.classes[j] for j in range(len(task.classes)) if proba[j] >= threshold]
+            # proba is our dict of exact set frequencies
+            # Find if any exact set meets or exceeds the threshold
+            for label_tuple, freq in proba.items():
+                if freq >= threshold:
+                    return list(label_tuple)
+            
+            # If no exact combination gets a majority, abstain!
+            return []
 
     # ── Protocol Methods ───────────────────────────────────────────────
 
     def fit(self, train_df: pd.DataFrame, val_df: pd.DataFrame | None = None) -> None:
-        print(f"fit(): zero-shot mode — no training needed.")
+        print(f"fit(): zero-shot mode, no training needed.")
         print(f"  Train: {len(train_df)} issues (unused)  |  "
               f"Val: {len(val_df) if val_df is not None else 0} issues (unused)")
 
-    def predict_proba(self, df: pd.DataFrame) -> dict[str, np.ndarray]:
+    def predict_proba(self, df: pd.DataFrame) -> dict[str, list]:
         samples_by_id = self._generate_samples(df)
         result = {}
         for task in self.tasks:
-            proba = np.zeros((len(df), len(task.classes)))
+            # Use a list because outputs are mixed type: ndarray (single) or dict (multi)
+            proba_list = []
             for i, (_, row) in enumerate(df.iterrows()):
                 issue_id = row[self.config.col_id]
                 samples = samples_by_id.get(issue_id, [])
-                proba[i] = self._aggregate_proba(samples, task)
-            result[task.name] = proba
+                proba_list.append(self._aggregate_proba(samples, task))
+            result[task.name] = proba_list
         return result
 
     def predict(self, df: pd.DataFrame) -> list[dict]:
@@ -432,22 +447,29 @@ class GeminiTriageModel:
         records = []
         for i, (_, row) in enumerate(df.iterrows()):
             record = {self.config.col_id: row[self.config.col_id]}
+            
+            # 1. Get predictions for all tasks
             for task in self.tasks:
                 proba_row = proba_dict[task.name][i]
                 record[task.name] = self._aggregate_prediction(proba_row, task)
 
+            # 2. Calculate Exact Set Confidence for the primary routing task
             comp_proba = proba_dict["components"][i]
-            predicted_mask = comp_proba >= self.config.aggregation_threshold
-            if predicted_mask.any():
-                record["confidence"] = float(comp_proba[predicted_mask].mean())
+            comps = record.get("components", [])
+            
+            if comps:
+                # Find the exact frequency of the winning set
+                comp_tuple = tuple(comps)
+                record["confidence"] = float(comp_proba.get(comp_tuple, 0.0))
             else:
                 record["confidence"] = 0.0
 
-            comps = record.get("components", [])
+            # 3. Abstention logic
             record["needs_human_triage"] = (
                 len(comps) == 0 or record["confidence"] < self.config.confidence_threshold
             )
             records.append(record)
+            
         return records
 
     def get_run_metadata(self) -> dict:
@@ -525,7 +547,7 @@ def evaluate_predictions(
 
 
 def evaluate_ranking(
-    proba_dict: dict[str, np.ndarray],
+    proba_dict: dict[str, list],  # <-- Updated type hint
     df_true: pd.DataFrame,
     tasks: list[TaskConfig],
 ) -> dict[str, dict]:
@@ -543,7 +565,19 @@ def evaluate_ranking(
                 gt = [gt]
             y_true_lists.append(gt)
         Y_true = mlb.fit_transform(y_true_lists)
-        proba = proba_dict[task.name]
+
+        raw_proba_list = proba_dict[task.name]
+        marginal_proba = np.zeros((len(df_true), len(task.classes)))
+
+        for i, p in enumerate(raw_proba_list):
+
+            for exact_set, freq in p.items():
+                for label in exact_set:
+                    if label in task.classes:
+                        marginal_proba[i, task.classes.index(label)] += freq              
+        proba = marginal_proba
+
+
         k = min(5, proba.shape[1])
         top_k_idx = np.argsort(proba, axis=1)[:, -k:]
         hits, n_with = 0, 0
@@ -565,41 +599,60 @@ def evaluate_ranking(
 
 
 def coverage_accuracy_curve(
-    proba: np.ndarray,
-    df_true: pd.DataFrame,
-    task: TaskConfig,
-    grid: np.ndarray | None = None,
-) -> list[dict]:
-    if grid is None:
-        grid = np.arange(0.05, 1.01, 0.05)
+    proba_list: list[dict], 
+    df_true: pd.DataFrame, 
+    task: TaskConfig
+) -> dict[str, list]:
+    import numpy as np
+    from sklearn.metrics import f1_score
+    from sklearn.preprocessing import MultiLabelBinarizer
+
+    # Ensure we have our ground truth lists
     mlb = MultiLabelBinarizer(classes=task.classes)
     y_true_lists = []
     for _, row in df_true.iterrows():
         gt = row.get(task.label_col, [])
         if isinstance(gt, float) or gt is None:
             gt = []
-        if isinstance(gt, str):
+        elif isinstance(gt, str):
             gt = [gt]
         y_true_lists.append(gt)
-    Y_true = mlb.fit_transform(y_true_lists)
-    curve = []
-    for t in grid:
-        Y_pred = (proba >= t).astype(int)
-        covered = Y_pred.sum(axis=1) > 0
-        cov = covered.mean()
-        if covered.sum() > 0:
-            mf1 = f1_score(Y_true[covered], Y_pred[covered], average="micro", zero_division=0)
-            avg_l = Y_pred[covered].sum(axis=1).mean()
-        else:
-            mf1, avg_l = 0.0, 0.0
-        curve.append({
-            "threshold": round(float(t), 4),
-            "coverage": round(float(cov), 4),
-            "micro_f1_covered": round(float(mf1), 4),
-            "avg_pred_labels": round(float(avg_l), 4),
-        })
-    return curve
 
+    thresholds = np.linspace(0.1, 1.0, 50)
+    coverages = []
+    accuracies = []
+
+    for t in thresholds:
+        preds_at_t = []
+        for p_dict in proba_list:
+            # p_dict is an exact set frequency dict, e.g. {('core', 'physics'): 0.8}
+            passed_sets = [list(label_set) for label_set, freq in p_dict.items() if freq >= t]
+            if passed_sets:
+                preds_at_t.append(passed_sets[0])
+            else:
+                preds_at_t.append([])
+
+        # Calculate Coverage
+        cov = np.mean([len(p) > 0 for p in preds_at_t])
+        coverages.append(float(cov))
+
+        # Calculate Micro-F1 on covered samples
+        covered_idx = [i for i, p in enumerate(preds_at_t) if len(p) > 0]
+        if covered_idx:
+            gt_cov = [y_true_lists[i] for i in covered_idx]
+            pred_cov = [preds_at_t[i] for i in covered_idx]
+            
+            Y_true = mlb.fit_transform(gt_cov)
+            Y_pred = mlb.transform(pred_cov)
+            accuracies.append(float(f1_score(Y_true, Y_pred, average="micro", zero_division=0)))
+        else:
+            accuracies.append(float("nan"))
+
+    return {
+        "thresholds": thresholds.tolist(),
+        "coverages": coverages,
+        "accuracies": accuracies
+    }
 
 # ═══════════════════════════════════════════════════════════════════════
 # Runner
@@ -653,7 +706,7 @@ class LLMTriageRunner:
         assert isinstance(self.model, TriageModel)
         self.model.fit(self.train_df, self.val_df)
         self.predictions = self.model.predict(self.test_df)
-        self.proba_dict = self.model.predict_proba(self.test_df)  # cached — no extra API calls
+        self.proba_dict = self.model.predict_proba(self.test_df)  # cached,  no extra API calls
         print(f"Generated {len(self.predictions)} predictions")
 
     # ── Evaluation ─────────────────────────────────────────────────────

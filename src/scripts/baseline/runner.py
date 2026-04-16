@@ -189,7 +189,7 @@ class ExperimentRunner:
 
             out["coverage_curve"] = model.coverage_curve_from_proba(proba, Y_true, grid=grid)
 
-            # trim large arrays before storing (save separately if you want)
+            # trim large arrays before storing
             out_small = {
                 "metrics_all": out["metrics_all"],
                 "metrics_at_coverage": out["metrics_at_coverage"],
@@ -238,7 +238,6 @@ class ExperimentRunner:
             if k not in self.models:
                 raise ValueError(f"Missing task '{k}' in models. Have: {list(self.models.keys())}")
 
-        # If you tuned global thresholds, you can wire them into the builder:
         thresholds = {}
         for spec in self.tasks:
             if spec.name in required:

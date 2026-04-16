@@ -1,17 +1,5 @@
 """
-Comparison Loader — load and compare TF-IDF baseline and LLM run artifacts.
-
-Usage:
-    from comparison_loader import RunComparison
-
-    comp = RunComparison(
-        baseline_run_dir="runs/20260409_120000",
-        llm_run_dir="runs/llm_gemini-2.5-flash-lite_20260409_130000",
-    )
-    comp.load()
-    comp.print_comparison_table()
-    comp.save_comparison_table("final_results/comparison.csv")
-    comp.print_schema_summary()
+Comparison Loader: load and compare TF-IDF baseline and LLM run artifacts.
 """
 from __future__ import annotations
 

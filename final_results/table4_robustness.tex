@@ -1,0 +1,20 @@
+\begin{table}[t]
+\centering
+\caption{Robustness evaluation on \emph{components} routing. $\Delta\mu$F1 = perturbed $-$ clean. Stability = fraction of issues with identical label sets before and after perturbation. LLM results are on a 700-issue sample ($N{=}3$, $T{=}0.2$); the None row is the control condition (unperturbed inputs).}
+\label{tab:robustness}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabularx}{\columnwidth}{l r r r r}
+\toprule
+\textbf{Perturbation} & \textbf{Base $\Delta\mu$F1} & \textbf{Base Stab.} & \textbf{LLM $\Delta\mu$F1} & \textbf{LLM Stab.} \\
+\midrule
+None (control) & $-0.005$ & 0.860 & $-0.042$ & 0.477 \\
+\midrule
+Remove Title & $-0.017$ & 0.765 & $-0.057$ & 0.419 \\
+Truncate Body (300 chars) & $-0.162$ & 0.338 & $-0.023$ & 0.429 \\
+Strip Code Blocks & $-0.007$ & 0.944 & $-0.044$ & 0.477 \\
+Drop First/Last 50 Tokens & $-0.031$ & 0.527 & $-0.033$ & 0.453 \\
+\bottomrule
+\end{tabularx}
+\end{table}
