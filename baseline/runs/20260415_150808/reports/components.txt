@@ -1,0 +1,25 @@
+              precision    recall  f1-score   support
+
+          2d       0.63      0.61      0.62       181
+          3d       0.67      0.79      0.72       449
+   animation       0.84      0.78      0.81       190
+ buildsystem       0.75      0.72      0.73        78
+        core       0.48      0.54      0.51       281
+      dotnet       0.57      0.83      0.68        98
+      editor       0.76      0.75      0.75      1358
+      export       0.44      0.86      0.58        83
+    gdscript       0.60      0.69      0.64       241
+         gui       0.44      0.82      0.57       373
+      import       0.72      0.77      0.74       129
+       input       0.52      0.72      0.61       154
+       other       0.80      0.72      0.76       302
+     physics       0.77      0.84      0.81       139
+   platforms       0.41      0.57      0.48       305
+   rendering       0.67      0.79      0.73       509
+     shaders       0.52      0.82      0.64        88
+  thirdparty       0.21      0.24      0.22        62
+
+   micro avg       0.62      0.73      0.67      5020
+   macro avg       0.60      0.71      0.64      5020
+weighted avg       0.65      0.73      0.68      5020
+ samples avg       0.62      0.73      0.64      5020

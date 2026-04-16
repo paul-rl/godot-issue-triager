@@ -1,0 +1,28 @@
+Robustness Interpretation Notes
+============================================================
+Primary routing task: components (micro-F1)
+
+[None]
+  Baseline  ΔμF1=-0.0053 (negligible (<0.01))  stability=0.8600 (mostly stable (0.75–0.90))
+  LLM (n=700) ΔμF1=-0.0417 (minor (0.01–0.05))  stability=0.4771 (UNSTABLE (<0.60))
+  
+
+[Remove Title]
+  Baseline  ΔμF1=-0.0174 (minor (0.01–0.05))  stability=0.7649 (mostly stable (0.75–0.90))
+  LLM (n=700) ΔμF1=-0.0573 (moderate (0.05–0.10))  stability=0.4186 (UNSTABLE (<0.60))
+  Tests body-only routing. A large drop means the model relies heavily on the short title summary; the body alone is insufficient for confident routing.
+
+[Truncate Body (300 chars)]
+  Baseline  ΔμF1=-0.1623 (LARGE (>0.10))  stability=0.3379 (UNSTABLE (<0.60))
+  LLM (n=700) ΔμF1=-0.0231 (minor (0.01–0.05))  stability=0.4286 (UNSTABLE (<0.60))
+  Simulates short or incomplete reports (first 300 chars only). Degradation here reflects dependence on full context for disambiguation.
+
+[Strip Code Blocks]
+  Baseline  ΔμF1=-0.0071 (negligible (<0.01))  stability=0.9436 (highly stable (>0.90))
+  LLM (n=700) ΔμF1=-0.0445 (minor (0.01–0.05))  stability=0.4771 (UNSTABLE (<0.60))
+  Removes fenced code blocks and inline backtick spans. Relevant for gdscript/rendering issues where API names are the primary signal. High stability means natural-language framing alone is sufficient.
+
+[Drop First/Last 50 Tokens]
+  Baseline  ΔμF1=-0.0311 (minor (0.01–0.05))  stability=0.5268 (UNSTABLE (<0.60))
+  LLM (n=700) ΔμF1=-0.0326 (minor (0.01–0.05))  stability=0.4529 (UNSTABLE (<0.60))
+  Drops first and last 50 tokens, removing opening framing and trailing metadata (OS, version, reproduction steps). A large drop suggests positional anchoring that may not generalise across report styles.

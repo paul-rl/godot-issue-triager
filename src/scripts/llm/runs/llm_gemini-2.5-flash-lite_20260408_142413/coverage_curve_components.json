@@ -1,0 +1,122 @@
+[
+  {
+    "threshold": 0.05,
+    "coverage": 0.9997,
+    "micro_f1_covered": 0.5168,
+    "avg_pred_labels": 3.2541
+  },
+  {
+    "threshold": 0.1,
+    "coverage": 0.9997,
+    "micro_f1_covered": 0.5403,
+    "avg_pred_labels": 2.9686
+  },
+  {
+    "threshold": 0.15,
+    "coverage": 0.9997,
+    "micro_f1_covered": 0.56,
+    "avg_pred_labels": 2.6936
+  },
+  {
+    "threshold": 0.2,
+    "coverage": 0.9997,
+    "micro_f1_covered": 0.56,
+    "avg_pred_labels": 2.6936
+  },
+  {
+    "threshold": 0.25,
+    "coverage": 0.9997,
+    "micro_f1_covered": 0.5688,
+    "avg_pred_labels": 2.5965
+  },
+  {
+    "threshold": 0.3,
+    "coverage": 0.9997,
+    "micro_f1_covered": 0.5742,
+    "avg_pred_labels": 2.5223
+  },
+  {
+    "threshold": 0.35,
+    "coverage": 0.9997,
+    "micro_f1_covered": 0.5838,
+    "avg_pred_labels": 2.4057
+  },
+  {
+    "threshold": 0.4,
+    "coverage": 0.9997,
+    "micro_f1_covered": 0.5838,
+    "avg_pred_labels": 2.4057
+  },
+  {
+    "threshold": 0.45,
+    "coverage": 0.9997,
+    "micro_f1_covered": 0.5875,
+    "avg_pred_labels": 2.3545
+  },
+  {
+    "threshold": 0.5,
+    "coverage": 0.9997,
+    "micro_f1_covered": 0.591,
+    "avg_pred_labels": 2.3045
+  },
+  {
+    "threshold": 0.55,
+    "coverage": 0.9995,
+    "micro_f1_covered": 0.5945,
+    "avg_pred_labels": 2.26
+  },
+  {
+    "threshold": 0.6,
+    "coverage": 0.9992,
+    "micro_f1_covered": 0.5993,
+    "avg_pred_labels": 2.1673
+  },
+  {
+    "threshold": 0.65,
+    "coverage": 0.9981,
+    "micro_f1_covered": 0.6019,
+    "avg_pred_labels": 2.1163
+  },
+  {
+    "threshold": 0.7,
+    "coverage": 0.9975,
+    "micro_f1_covered": 0.6041,
+    "avg_pred_labels": 2.0593
+  },
+  {
+    "threshold": 0.75,
+    "coverage": 0.9948,
+    "micro_f1_covered": 0.6094,
+    "avg_pred_labels": 2.0055
+  },
+  {
+    "threshold": 0.8,
+    "coverage": 0.9948,
+    "micro_f1_covered": 0.6094,
+    "avg_pred_labels": 2.0055
+  },
+  {
+    "threshold": 0.85,
+    "coverage": 0.9918,
+    "micro_f1_covered": 0.6173,
+    "avg_pred_labels": 1.8664
+  },
+  {
+    "threshold": 0.9,
+    "coverage": 0.9874,
+    "micro_f1_covered": 0.6203,
+    "avg_pred_labels": 1.7833
+  },
+  {
+    "threshold": 0.95,
+    "coverage": 0.9728,
+    "micro_f1_covered": 0.6239,
+    "avg_pred_labels": 1.6563
+  },
+  {
+    "threshold": 1.0,
+    "coverage": 0.9728,
+    "micro_f1_covered": 0.6239,
+    "avg_pred_labels": 1.6563
+  }
+]
